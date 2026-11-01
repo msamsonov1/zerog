@@ -2,7 +2,7 @@
 
 > **Real-Time Dynamic Contact Impedance $(v, R)$ State-Space Inversion and Microsecond Electromagnetic Deflection Interlock for Microgravity Metal Additive Manufacturing.**
 Live Link: https://msamsonov1.github.io/zerog/
-Developed by **RFWaveCode** (`CAGE: 8V2L1` | `UEI: Y4K8NJM49L93`) under NASA SBIR 2026 Solicitation Topic **Z1.04: In-Space Servicing, Assembly, and Manufacturing (ISAM) & Autonomous Structural Quality Verification**.
+Developed by **RFWaveCode** under NASA SBIR 2026 Solicitation Topic **Z1.04: In-Space Servicing, Assembly, and Manufacturing (ISAM) & Autonomous Structural Quality Verification**.
 
 🔗 **Interactive Simulation & Telemetry HUD:** Single-file application (`index.html`)  
 📬 **Primary Technical Point of Contact:** [support@rfwavecode.com](mailto:support@rfwavecode.com)
