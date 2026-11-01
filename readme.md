@@ -1,8 +1,8 @@
 # WireArc-ZeroG: In-Space Electron-Beam Additive Quality Scanner
 
 > **Real-Time Dynamic Contact Impedance $(v, R)$ State-Space Inversion and Microsecond Electromagnetic Deflection Interlock for Microgravity Metal Additive Manufacturing.**
-
-Developed by **RFWaveCode LLC** (`CAGE: 8V2L1` | `UEI: Y4K8NJM49L93`) under NASA SBIR 2026 Solicitation Topic **Z1.04: In-Space Servicing, Assembly, and Manufacturing (ISAM) & Autonomous Structural Quality Verification**.
+Live Link: https://msamsonov1.github.io/zerog/
+Developed by **RFWaveCode** (`CAGE: 8V2L1` | `UEI: Y4K8NJM49L93`) under NASA SBIR 2026 Solicitation Topic **Z1.04: In-Space Servicing, Assembly, and Manufacturing (ISAM) & Autonomous Structural Quality Verification**.
 
 🔗 **Interactive Simulation & Telemetry HUD:** Single-file application (`index.html`)  
 📬 **Primary Technical Point of Contact:** [support@rfwavecode.com](mailto:support@rfwavecode.com)
@@ -283,11 +283,11 @@ void WireArc_ProcessImpedance(void)
 
 ## Data Rights & Contact
 
-* **Proprietary Notice:** RFWaveCode LLC holds all software architecture and state inversion patent rights.
+* **Proprietary Notice:** RFWaveCode holds all software architecture and state inversion patent rights.
 * **Government Purpose Rights:** NASA SBIR data rights apply under FAR 52.227-20 for Phase I awardees.
 
 For technical documentation, bench validation datasets, or STTR academic research partnership inquiries:
 
-* **Company:** RFWaveCode LLC
+* **Company:** RFWaveCode
 * **DUNS / UEI:** `Y4K8NJM49L93` | **CAGE Code:** `8V2L1`
 * **Email:** [support@rfwavecode.com](mailto:support@rfwavecode.com)
