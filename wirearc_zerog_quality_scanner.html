@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WireArc-ZeroG: In-Space Electron-Beam Additive Quality Scanner</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bulletproof MathJax v3 Configuration -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #05070d;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .formula-box {
+      background: #030712;
+      border: 1px solid #1f2937;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0;
+      text-align: center;
+      color: #38bdf8;
+      overflow-x: auto;
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b0f19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2937;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #374151;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#05070d] text-slate-200">
+
+  <!-- Top Navigation & Global Header -->
+  <header class="border-b border-gray-800 bg-[#080c14]/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 rounded-lg bg-cyan-950/80 border border-cyan-500/40 text-cyan-400">
+          <i data-lucide="zap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs uppercase tracking-widest font-mono text-cyan-400 font-semibold">RFWaveCode • Phase I SBIR</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">NASA TRL-3 to TRL-5</span>
+          </div>
+          <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            WireArc-ZeroG <span class="text-xs font-normal text-slate-400 hidden sm:inline">| In-Space Electron-Beam Additive Quality Scanner</span>
+          </h1>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center gap-1 sm:gap-2 bg-gray-900/80 p-1 rounded-xl border border-gray-800">
+        <button id="tabBtnSim" onclick="switchTab('sim')" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-2 bg-cyan-600 text-white shadow-lg shadow-cyan-600/30">
+          <i data-lucide="gauge" class="w-4 h-4"></i>
+          <span>Live HUD</span>
+        </button>
+        <button id="tabBtnPhysics" onclick="switchTab('physics')" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="atom" class="w-4 h-4"></i>
+          <span>Physics & Math</span>
+        </button>
+        <button id="tabBtnProposal" onclick="switchTab('proposal')" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="file-check-2" class="w-4 h-4"></i>
+          <span>$225k SBIR Plan</span>
+        </button>
+        <button id="tabBtnARR" onclick="switchTab('arr')" class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>Civil ARR ($212M)</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: LIVE SIMULATION & TELEMETRY HUD (#viewSim)                          -->
+    <!-- ========================================================================= -->
+    <div id="viewSim" class="space-y-6">
+
+      <!-- Status Banner & Quick Diagnostics -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-gray-900/50 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>Pool Liquid Bridge State</span>
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400" id="statusIcon"></i>
+          </div>
+          <div class="mt-2">
+            <span id="systemStateBadge" class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              STABLE MENISCUS BRIDGE
+            </span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono mt-1">Deflection Interlock: Active (10 µs)</div>
+        </div>
+
+        <div class="bg-gray-900/50 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>Wire Feed Velocity ($v$)</span>
+            <i data-lucide="move-right" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="hudVelocityVal" class="text-2xl font-bold font-mono text-cyan-400">22.4</span>
+            <span class="text-xs text-slate-400 font-mono">mm/s</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono">Deposition Rate: <span id="hudDepRate">1.42 kg/hr</span></div>
+        </div>
+
+        <div class="bg-gray-900/50 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>Dynamic Pool Resistance ($R$)</span>
+            <i data-lucide="activity" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="hudResVal" class="text-2xl font-bold font-mono text-amber-400">46.5</span>
+            <span class="text-xs text-slate-400 font-mono">mΩ</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono">Threshold Limit: <span id="hudResLimit">88.0 mΩ</span></div>
+        </div>
+
+        <div class="bg-gray-900/50 border border-gray-800 rounded-xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>Void / Porosity Probability</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-violet-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="hudPorosityVal" class="text-2xl font-bold font-mono text-violet-400">0.03</span>
+            <span class="text-xs text-slate-400 font-mono">%</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono">Beam Steer Offset: <span id="hudBeamOffset" class="text-slate-300">0.00 mm</span></div>
+        </div>
+      </div>
+
+      <!-- Main Interactive Display: Canvas Schematic + Phase Plane Chart -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Electron Beam & Wire Deposition Hardware Schematic Canvas (Left 7 cols) -->
+        <div class="lg:col-span-7 bg-gray-900/40 border border-gray-800 rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded bg-cyan-950 border border-cyan-800 text-cyan-400">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+              </span>
+              <h2 class="text-sm font-semibold text-white tracking-wide">
+                Orbital Electron-Beam Wire-Fed Truss Deposition (Microgravity Vacuum)
+              </h2>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-mono">
+              <span class="flex items-center gap-1.5 text-slate-400">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span> 60 kV E-Beam
+              </span>
+              <span class="flex items-center gap-1.5 text-slate-400 ml-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Ti-6Al-4V Wire
+              </span>
+            </div>
+          </div>
+
+          <div class="relative w-full bg-[#03050a] rounded-xl border border-gray-900 overflow-hidden flex-1 min-h-[300px]">
+            <canvas id="ebCanvas" class="w-full h-full block"></canvas>
+            <!-- Canvas Overlay Badges -->
+            <div id="vacuumBadge" class="absolute top-3 right-3 bg-gray-950/80 backdrop-blur border border-gray-800 px-3 py-1.5 rounded-lg text-[11px] font-mono text-slate-300">
+              Chamber/Orbit Vacuum: <span class="text-cyan-400 font-bold" id="canvasVacVal">1.2 × 10⁻⁵ Torr</span>
+            </div>
+            <div id="coilInterlockOverlay" class="hidden absolute bottom-3 left-3 bg-cyan-950/90 border border-cyan-500 px-3 py-1.5 rounded-lg text-[11px] font-mono text-cyan-300 animate-bounce">
+              ⚡ EM Deflection Coils Repositioned (+0.42mm offset) | Arc Bridge Restored
+            </div>
+          </div>
+
+          <div class="mt-3 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2 border-t border-gray-800/60 pt-2.5">
+            <span class="font-mono text-[11px]">Consumable Wire: Ø 1.2 mm Grade 5 Titanium • Micro-Impedance Sensor Array (100 kHz)</span>
+            <span class="text-cyan-400 hover:underline cursor-pointer" onclick="resetDefaults()">Reset to Nominal Flight Trim</span>
+          </div>
+        </div>
+
+        <!-- Diagnostic Phase Space Chart (Right 5 cols) -->
+        <div class="lg:col-span-5 bg-gray-900/40 border border-gray-800 rounded-2xl p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="p-1 rounded bg-violet-950 border border-violet-800 text-violet-400">
+                <i data-lucide="line-chart" class="w-4 h-4"></i>
+              </span>
+              <h2 class="text-sm font-semibold text-white tracking-wide">
+                $v\text{-}R$ Phase-Space Impedance Auditor
+              </h2>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">Zero-G Detachment Boundary</span>
+          </div>
+
+          <div class="relative w-full flex-1 min-h-[300px]">
+            <canvas id="phaseChart"></canvas>
+          </div>
+
+          <div class="mt-2 p-2.5 bg-black/40 rounded-lg border border-gray-800 text-[11px] text-slate-400 leading-relaxed font-mono">
+            <span class="text-cyan-300 font-semibold">Diagnostic Principle:</span> Continuous continuous-wave contact impedance ($R$) vs feed velocity ($v$). A resistance spike without feed deceleration indicates meniscus thinning and micro-droplet detachment, leading to internal truss porosity.
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Simulation Parameters Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Sliders & Injection (8 cols) -->
+        <div class="lg:col-span-8 bg-gray-900/40 border border-gray-800 rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 font-mono">
+              <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+              ISAM Process Controls & Orbital Boundary Conditions
+            </h3>
+            <span class="text-xs text-slate-400 font-mono">100 kHz Hardware Observer Engine</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Wire Feed Velocity Slider -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">Wire Feed Velocity ($v$)</span>
+                <span id="sliderVelVal" class="font-mono text-cyan-400 font-bold">22.0 mm/s</span>
+              </div>
+              <input type="range" id="inputVel" min="5" max="45" value="22" step="0.5" class="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>5 mm/s (Low-rate)</span>
+                <span>22 mm/s (Truss Nominal)</span>
+                <span>45 mm/s (Over-feed)</span>
+              </div>
+            </div>
+
+            <!-- E-Beam Acceleration Voltage / Power -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">Electron Beam Power ($P_{\text{beam}}$)</span>
+                <span id="sliderBeamVal" class="font-mono text-amber-400 font-bold">3.2 kW</span>
+              </div>
+              <input type="range" id="inputBeam" min="1.0" max="6.5" value="3.2" step="0.1" class="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>1.0 kW (Lack of Fusion)</span>
+                <span>3.2 kW (Nominal)</span>
+                <span>6.5 kW (Keyhole Collapse)</span>
+              </div>
+            </div>
+
+            <!-- Surface Tension / Wetting Degradation (Zero-G Marangoni & Contamination) -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">Molten Marangoni Convection / Wetting</span>
+                <span id="sliderWettingVal" class="font-mono text-violet-400 font-bold">1.00 × Marangoni</span>
+              </div>
+              <input type="range" id="inputWetting" min="0.4" max="2.2" value="1.0" step="0.05" class="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-violet-500">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>0.4 (Low Wetting / High Angle)</span>
+                <span>1.0 (Baseline Ti)</span>
+                <span>2.2 (Extreme Capillary Wave)</span>
+              </div>
+            </div>
+
+            <!-- Wire Stand-off Distance / Alignment -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-300">Contact Wire Stand-off Gap ($d_g$)</span>
+                <span id="sliderGapVal" class="font-mono text-rose-400 font-bold">2.4 mm</span>
+              </div>
+              <input type="range" id="inputGap" min="1.0" max="6.0" value="2.4" step="0.1" class="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-rose-500">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                <span>1.0 mm (Wick Touch)</span>
+                <span>2.4 mm (Nominal Standoff)</span>
+                <span>6.0 mm (Severed Bridge)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fault Injection & Auto Intervention Buttons -->
+          <div class="mt-6 pt-4 border-t border-gray-800 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-slate-400 uppercase tracking-wide">Dynamic Fault Injections:</span>
+              <button onclick="injectFault('wireHiccup')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-950/60 hover:bg-red-900 border border-red-700/60 text-red-300 transition-all">
+                ⚡ Wire Feed Slip (Spike $R$)
+              </button>
+              <button onclick="injectFault('beamOvershoot')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-950/60 hover:bg-amber-900 border border-amber-700/60 text-amber-300 transition-all">
+                ☀️ Thermal Keyhole Vaporization
+              </button>
+              <button onclick="injectFault('gapSeparation')" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-950/60 hover:bg-purple-900 border border-purple-700/60 text-purple-300 transition-all">
+                🫧 Liquid Bridge Detachment
+              </button>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="autoObserverToggle" checked class="sr-only peer">
+                <div class="relative w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                <span class="ml-2 text-xs font-mono text-slate-300">WireArc-ZeroG Fast Deflection Loop</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry History Strip (Right 4 cols) -->
+        <div class="lg:col-span-4 bg-gray-900/40 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider font-mono">Impedance Telemetry Stream</h3>
+              <span class="text-[10px] font-mono text-cyan-400">Sampling 100 kHz (Downsampled)</span>
+            </div>
+            <div class="h-44 w-full">
+              <canvas id="timeSeriesChart"></canvas>
+            </div>
+          </div>
+
+          <div class="mt-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
+            <div class="text-[11px] font-mono text-slate-400 flex justify-between">
+              <span>Coil Compensation Status:</span>
+              <span id="mitigationStatusText" class="text-emerald-400 font-bold">NOMINAL OBSERVATION</span>
+            </div>
+            <div class="w-full bg-gray-800 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div id="stressProgressBar" class="bg-cyan-500 h-1.5 rounded-full transition-all duration-300" style="width: 28%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1.5">
+              <span>Dynamic Bridge Stress Margin</span>
+              <span id="stressProgressLabel">28%</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: CORE PHYSICS & MATHEMATICAL MODEL (#viewPhysics)                    -->
+    <!-- ========================================================================= -->
+    <div id="viewPhysics" class="hidden space-y-6">
+
+      <!-- Intro Card -->
+      <div class="bg-gradient-to-r from-cyan-950/40 via-gray-900/40 to-slate-900/40 border border-cyan-800/40 rounded-2xl p-6">
+        <div class="flex items-start gap-4">
+          <div class="p-3 bg-cyan-900/50 rounded-xl border border-cyan-600/40 text-cyan-300">
+            <i data-lucide="binary" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-white">Mathematical Foundation: Zero-G Capillary Liquid Bridge & Contact Impedance</h2>
+            <p class="text-sm text-slate-300 mt-1 leading-relaxed">
+              In orbital vacuum electron-beam additive manufacturing (ISAM), gravity is absent ($g \approx 0$). Without hydrostatic pressure head, the molten pool geometry is governed strictly by surface tension ($\gamma$), electron recoil pressure, and Marangoni flow. The WireArc-ZeroG Auditor samples instantaneous dynamic electrical contact resistance ($R$) and wire feed velocity ($v$), executing real-time inverse reconstruction of the liquid bridge meniscus radius to eliminate void defect formation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Core Technical Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Card 1: Zero-G Liquid Bridge Equilibrium -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">Card 01</span>
+              <span class="text-xs text-slate-400 font-mono">Young-Laplace & Zero-G Capillary Force</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2">1. Microgravity Liquid Meniscus Bridge Equilibrium</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+              Without gravity stabilizing the melt puddle, the liquid bridge between the advancing titanium wire tip and the substrate truss is balanced by capillary and recoil forces:
+            </p>
+
+            <div class="formula-box">
+              $$\Delta P = \gamma \left( \frac{1}{R_1} + \frac{1}{R_2} \right) + P_{\text{recoil}} = \gamma \kappa(s) + \frac{0.55 P_0}{\sqrt{2\pi \mathcal{R} T}} \exp\left[ -\frac{\Delta H_v}{\mathcal{R} T} \right]$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              Where $\gamma$ is molten Ti-6Al-4V surface tension ($1.65\,\text{N/m}$), $R_1, R_2$ are principal radii of curvature, $P_{\text{recoil}}$ is vapor recoil pressure under high-power electron bombardment, and $\kappa(s)$ is the local meniscus curvature along arc length $s$.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-cyan-400">
+            Stability Limit: When bridge length exceeds Rayleigh-Plateau limit ($L > 2\pi r_{\text{bridge}}$), pinch-off occurs.
+          </div>
+        </div>
+
+        <!-- Card 2: Contact Resistance & Meniscus Area Inversion -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-violet-950 text-violet-400 border border-violet-800">Card 02</span>
+              <span class="text-xs text-slate-400 font-mono">Maxwell Constriction Resistance</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2">2. Dynamic Contact Resistance ($R$) & Necking Area</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+              The high-frequency (100 kHz) sensing circuit treats the liquid bridge as a dynamic constriction resistor whose resistance is inversely proportional to the liquid contact neck radius $a(t)$:
+            </p>
+
+            <div class="formula-box">
+              $$R(t) = R_{\text{bulk}} + R_{\text{constriction}} = \frac{\rho_{\text{solid}} L_{\text{stickout}}}{\pi r_w^2} + \frac{\rho_{\text{liquid}}(T)}{2 a(t)} + \frac{\rho_{\text{truss}}}{4 r_{\text{pool}}}$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              Where $\rho_{\text{liquid}} \approx 1.68 \times 10^{-6}\,\Omega\cdot\text{m}$ for molten titanium at 1950 K. If the meniscus begins to neck or droplet detachment begins, the effective radius $a(t) \to 0$, causing $R(t)$ to spike asymptotically.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-violet-400">
+            Microsecond Sensitivity: A 15% reduction in contact bridge neck radius triggers a measurable $3.8\times$ jump in constriction resistance.
+          </div>
+        </div>
+
+        <!-- Card 3: Non-Linear Velocity-Resistance State Inversion -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">Card 03</span>
+              <span class="text-xs text-slate-400 font-mono">Real-Time Inversion Algorithm</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2">3. The $(v, R)$ State-Space Inversion & Phase Boundary</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+              Under nominal steady-state wire deposition, wire feed velocity ($v$) precisely supplies volume to match beam melting rate ($\dot{V}_{\text{melt}} = \eta P_{\text{beam}} / \Delta H_m$):
+            </p>
+
+            <div class="formula-box">
+              $$R_{\text{nominal}}(v) = R_0 + \alpha \frac{\mu_{\text{eff}} \cdot v}{\gamma_{\text{surface}}} \left( 1 + \text{Ca}^{1/3} \right)^{-1}, \quad \text{where } \text{Ca} = \frac{\mu v}{\gamma}$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              If $R$ increases while $v$ remains constant ($\frac{\partial R}{\partial t}\big|_v > \xi_{\text{threshold}}$), the observer identifies micro-droplet detachment, bead humping, or keyhole void inception without relying on slow optical cameras.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-amber-400">
+            Autonomous Intercept: Repositions electromagnetic focus/deflection coils to broaden pool geometry before droplet separation.
+          </div>
+        </div>
+
+        <!-- Card 4: Sensor Instrumentation & Hardware Specs -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Card 04</span>
+              <span class="text-xs text-slate-400 font-mono">Microsecond Deflection Control</span>
+            </div>
+            <h3 class="text-base font-bold text-white mb-2">4. Microsecond Deflection Control & Sensor Front-End</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+              The embedded controller utilizes a low-voltage isolated AC excitation carrier (100 kHz, 250 mV RMS) passed through the feed guide nozzle into the substrate truss:
+            </p>
+
+            <div class="formula-box">
+              $$\mathbf{I}_{\text{deflect}}(t + \Delta t) = \mathbf{K}_p \left( R(t) - R_{\text{target}}(v) \right) + \mathbf{K}_d \frac{d R}{dt} + \mathbf{K}_{\text{feed}} \nabla_{\mathbf{B}} \Phi_{\text{beam}}$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              Sensing: Fast lock-in demodulation ASIC sampling at 100 kHz. Deflection: Quadrupole electromagnetic deflection coils responding in $< 12\,\mu\text{s}$, steering the 60 kV electron beam to melt the retreating meniscus.
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-emerald-400">
+            Deflection Bandwidth: 25 kHz magnetic steering loop prevents zero-g lack-of-fusion and macro-void entrapment.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: $225,000 NASA SBIR PROPOSAL & HARDWARE TRANSITION (#viewProposal)  -->
+    <!-- ========================================================================= -->
+    <div id="viewProposal" class="hidden space-y-6">
+
+      <!-- SBIR Phase I Header Card -->
+      <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-4">
+          <div>
+            <span class="text-xs font-mono uppercase tracking-widest text-cyan-400 font-semibold">NASA SBIR 2026 Phase I Proposal</span>
+            <h2 class="text-xl font-bold text-white mt-1">Topic Z1.04: In-Space Additive Manufacturing & Autonomous Structural Quality Verification</h2>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-xs text-slate-400 font-mono">Period of Performance</div>
+              <div class="text-sm font-bold text-white font-mono">6 Months (Nov 2026 – Apr 2027)</div>
+            </div>
+            <div class="h-8 w-px bg-gray-800 hidden sm:block"></div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400 font-mono">Phase I Contract Value</div>
+              <div class="text-lg font-bold text-emerald-400 font-mono">$225,000.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 text-xs">
+          <div class="p-3 bg-gray-950 rounded-xl border border-gray-800/80">
+            <span class="text-slate-400">Target NASA Mission:</span>
+            <div class="text-white font-semibold mt-1">In-Space Servicing, Assembly, and Manufacturing (ISAM) of Artemis 25m Reflector Trusses & Persistent Platforms</div>
+          </div>
+          <div class="p-3 bg-gray-950 rounded-xl border border-gray-800/80">
+            <span class="text-slate-400">Prime Contractor:</span>
+            <div class="text-cyan-400 font-semibold mt-1">RFWaveCode LLC (CAGE: 8V2L1 • UEI: Y4K8NJM49L93)</div>
+          </div>
+          <div class="p-3 bg-gray-950 rounded-xl border border-gray-800/80">
+            <span class="text-slate-400">Key Innovation:</span>
+            <div class="text-violet-400 font-semibold mt-1">Non-optical $(v, R)$ Contact Impedance Inversion with Microsecond E-Beam Deflection Anti-Defect Interlock</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Budget Breakdown & Academic Subcontractor Card -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Budget Allocation Table (7 cols) -->
+        <div class="lg:col-span-7 bg-gray-900/40 border border-gray-800 rounded-2xl p-5">
+          <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2 font-mono">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-400"></i>
+            Phase I Budget Allocation & Cost Realism ($225,000)
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-gray-950 text-slate-400 border-b border-gray-800">
+                <tr>
+                  <th class="p-2.5">Cost Category</th>
+                  <th class="p-2.5">Allocation Description</th>
+                  <th class="p-2.5 text-right">Amount</th>
+                  <th class="p-2.5 text-right">% Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/60">
+                <tr>
+                  <td class="p-2.5 font-semibold text-white">Direct Technical Labor</td>
+                  <td class="p-2.5 text-slate-400">Lead Additive Physicist & Real-Time FPGA / Embedded Engineers (820 hrs)</td>
+                  <td class="p-2.5 text-right text-slate-200 font-bold">$104,200</td>
+                  <td class="p-2.5 text-right text-cyan-400 font-bold">46.3%</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-semibold text-white">Fringe & Indirect Overhead</td>
+                  <td class="p-2.5 text-slate-400">DCAA compliant provisional indirects (30.8% labor base)</td>
+                  <td class="p-2.5 text-right text-slate-200 font-bold">$32,100</td>
+                  <td class="p-2.5 text-right text-cyan-400 font-bold">14.3%</td>
+                </tr>
+                <tr class="bg-violet-950/20">
+                  <td class="p-2.5 font-semibold text-violet-300">University Subcontract (STTR)</td>
+                  <td class="p-2.5 text-violet-300">Microgravity Drop Tower & Vacuum E-Beam Test Facility Partner</td>
+                  <td class="p-2.5 text-right text-violet-300 font-bold">$67,500</td>
+                  <td class="p-2.5 text-right text-violet-400 font-bold">30.0%</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-semibold text-white">Flight Sensors & Prototyping</td>
+                  <td class="p-2.5 text-slate-400">High-speed lock-in demodulators, Ti-6Al-4V ELI wire spools, isolated Rogowski coils</td>
+                  <td class="p-2.5 text-right text-slate-200 font-bold">$10,400</td>
+                  <td class="p-2.5 text-right text-cyan-400 font-bold">4.6%</td>
+                </tr>
+                <tr>
+                  <td class="p-2.5 font-semibold text-white">Negotiated Fee / Profit</td>
+                  <td class="p-2.5 text-slate-400">FAR 15.404-4 standard small business commercialization fee (4.8%)</td>
+                  <td class="p-2.5 text-right text-slate-200 font-bold">$10,800</td>
+                  <td class="p-2.5 text-right text-cyan-400 font-bold">4.8%</td>
+                </tr>
+                <tr class="bg-gray-950/80 font-bold border-t border-gray-700">
+                  <td class="p-2.5 text-emerald-400">Total Phase I Price</td>
+                  <td class="p-2.5 text-slate-400 font-normal">Firm-Fixed-Price NASA SBIR Allocation</td>
+                  <td class="p-2.5 text-right text-emerald-400">$225,000</td>
+                  <td class="p-2.5 text-right text-emerald-400">100.0%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Academic Partner Callout (5 cols) -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-violet-950/30 to-gray-900/40 border border-violet-800/40 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-violet-900/60 text-violet-300 border border-violet-700">30.0% STTR Partner</span>
+              <span class="text-xs text-slate-400 font-mono">$67,500 Allocation</span>
+            </div>
+            <h3 class="text-sm font-bold text-white">Academic Research Subcontractor</h3>
+            <div class="text-xs font-semibold text-violet-300 mt-0.5">High-Temperature Materials & Microgravity Additive Laboratory</div>
+            <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+              Provides dedicated vacuum chamber ($10^{-5}\text{ Torr}$) testing and short-duration microgravity drop-tower verification of the $(v, R)$ dynamic impedance model. The research partner performs high-speed synchrotron radiographic inspection and CT cross-section reconstruction of printed titanium truss nodes to correlate impedance anomalies with pore nucleation.
+            </p>
+
+            <div class="mt-4 space-y-2 text-xs">
+              <div class="flex items-center gap-2 text-slate-300">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-violet-400"></i>
+                <span>Vacuum E-Beam micro-deposition testbed verification</span>
+              </div>
+              <div class="flex items-center gap-2 text-slate-300">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-violet-400"></i>
+                <span>Micro-CT non-destructive porosity benchmarking</span>
+              </div>
+              <div class="flex items-center gap-2 text-slate-300">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-violet-400"></i>
+                <span>Joint NASA Technical Memorandum co-authorship</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 p-3 rounded-xl bg-violet-950/40 border border-violet-800/50 text-[11px] font-mono text-violet-300">
+            Subcontract Lead: Aerospace & Materials Engineering Research Group
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 6-Month Work Breakdown Milestones -->
+      <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2 font-mono">
+          <i data-lucide="calendar" class="w-4 h-4 text-cyan-400"></i>
+          Phase I Work Breakdown Schedule (Months 1–6)
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Month 1-2 -->
+          <div class="bg-gray-950/60 p-4 rounded-xl border border-gray-800 relative">
+            <span class="text-xs font-mono text-cyan-400 font-bold">Months 1–2</span>
+            <h4 class="text-sm font-semibold text-white mt-1">Zero-G Capillary Model & Meniscus Inversion</h4>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Formulate 3D finite-element surface tension model for wire bridge dynamics under zero-g. Calibrate theoretical $(v, R)$ state boundaries for Ti-6Al-4V under $10^{-5}\text{ Torr}$ vacuum conditions.
+            </p>
+            <div class="mt-3 text-[11px] font-mono text-slate-500">Deliverable: Meniscus Dynamic Solver Report</div>
+          </div>
+
+          <!-- Month 3 -->
+          <div class="bg-gray-950/60 p-4 rounded-xl border border-gray-800 relative">
+            <span class="text-xs font-mono text-cyan-400 font-bold">Month 3</span>
+            <h4 class="text-sm font-semibold text-white mt-1">100 kHz Demodulation Firmware & FPGA Build</h4>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Design and code real-time contact impedance demodulator on radiation-tolerant Xilinx Zynq UltraScale+ FPGA. Implement microsecond detection of $\partial R / \partial t$ impedance spikes.
+            </p>
+            <div class="mt-3 text-[11px] font-mono text-slate-500">Deliverable: FPGA Observer Firmware Build v1.0</div>
+          </div>
+
+          <!-- Month 4-5 -->
+          <div class="bg-gray-950/60 p-4 rounded-xl border border-gray-800 relative">
+            <span class="text-xs font-mono text-cyan-400 font-bold">Months 4–5</span>
+            <h4 class="text-sm font-semibold text-white mt-1">Vacuum Chamber Additive Campaign & Micro-CT</h4>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Execute 30+ deposition runs in university partner high-vacuum E-beam chamber. Induce deliberate feed fluctuations and demonstrate 100% real-time defect capture via high-speed beam deflection.
+            </p>
+            <div class="mt-3 text-[11px] font-mono text-slate-500">Deliverable: Micro-CT Defect Prevention Dataset</div>
+          </div>
+
+          <!-- Month 6 -->
+          <div class="bg-gray-950/60 p-4 rounded-xl border border-gray-800 relative">
+            <span class="text-xs font-mono text-cyan-400 font-bold">Month 6</span>
+            <h4 class="text-sm font-semibold text-white mt-1">Phase II Avionics Transition Package</h4>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              Finalize flight enclosure specification, NASA Core Flight System (cFS) applet wrapper, and detailed Phase II commercialization road map ($950k prototype flight experiment).
+            </p>
+            <div class="mt-3 text-[11px] font-mono text-slate-500">Deliverable: Final Report & Flight Test Spec</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase II Transition & Flight Integration Path -->
+      <div class="bg-gradient-to-r from-gray-900/60 to-gray-950 border border-gray-800 rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2 font-mono">
+          <i data-lucide="rocket" class="w-4 h-4 text-emerald-400"></i>
+          Phase II ($950k–$1.25M) Orbital Flight Demo Path
+        </h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Phase II will target integration into a robotic in-space additive manufacturing payload aboard the ISS Columbus External Payload Facility or a commercial free-flying outpost (Axiom/Orbital Reef). The software auditor will be embedded into the printer controller, allowing multi-meter titanium truss members to be printed with zero lack-of-fusion voids without returning coupons to Earth for destructive inspection.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: COMMERCIAL & NATIONWIDE ARR BREAKDOWN (#viewARR)                    -->
+    <!-- ========================================================================= -->
+    <div id="viewARR" class="hidden space-y-6">
+
+      <!-- Top Financial Callout & Valuation Banner -->
+      <div class="bg-gradient-to-r from-emerald-950/40 via-cyan-950/30 to-gray-900/50 border border-emerald-500/30 rounded-2xl p-6">
+        <div class="flex flex-wrap items-center justify-between gap-6">
+          <div>
+            <span class="text-xs uppercase tracking-widest font-mono text-emerald-400 font-semibold">Strict Civil & Commercial Market Expansion</span>
+            <h2 class="text-2xl font-bold text-white mt-1">Nationwide Recurring Software Opportunity: $212.5M ARR</h2>
+            <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+              WireArc-ZeroG non-optical contact impedance scanning addresses critical lack-of-fusion and keyhole collapse defects across terrestrial vacuum electron-beam welding, commercial space station truss fabrication, semiconductor chambers, and aerospace titanium additive manufacturing.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-6 bg-black/40 p-4 rounded-xl border border-gray-800">
+            <div>
+              <div class="text-[11px] font-mono text-slate-400">Enterprise Valuation (10x Multiple)</div>
+              <div class="text-2xl font-bold font-mono text-emerald-400">$2.12 Billion</div>
+            </div>
+            <div class="h-10 w-px bg-gray-800"></div>
+            <div>
+              <div class="text-[11px] font-mono text-slate-400">Gross Software Margin</div>
+              <div class="text-2xl font-bold font-mono text-cyan-400">89.2%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commercial ARR Distribution Table -->
+      <div class="bg-gray-900/40 border border-gray-800 rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2 font-mono">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-cyan-400"></i>
+          Civil Market Sizing & Enterprise SaaS Projections
+        </h3>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-gray-950 text-slate-400 border-b border-gray-800">
+              <tr>
+                <th class="p-3">Target Civil Sector</th>
+                <th class="p-3">Application Hardware</th>
+                <th class="p-3">SaaS / Machine Node Pricing</th>
+                <th class="p-3">Operational Machine Base</th>
+                <th class="p-3 text-right">Mature Annual ARR</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800/60">
+              <tr class="hover:bg-gray-900/40">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="plane" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  Commercial Aerospace Ti-6Al-4V Additive
+                </td>
+                <td class="p-3 text-slate-300">Large-scale wire-fed titanium airframe forgings & wing spars</td>
+                <td class="p-3 text-slate-400">$65,000 / EB-DED machine / year</td>
+                <td class="p-3 text-slate-300">1,240 Industrial Wire-DED Cells</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$80.6M</td>
+              </tr>
+              <tr class="hover:bg-gray-900/40">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="satellite" class="w-3.5 h-3.5 text-blue-400"></i>
+                  Commercial Orbital Space Stations & ISAM
+                </td>
+                <td class="p-3 text-slate-300">Robotic in-space truss printers (Axiom, Orbital Reef, Vast)</td>
+                <td class="p-3 text-slate-400">$180,000 / flight printer / year</td>
+                <td class="p-3 text-slate-300">260 Orbital / Lunar Manufacturing Arms</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$46.8M</td>
+              </tr>
+              <tr class="hover:bg-gray-900/40">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                  Civil Nuclear Fusion & SMR Vessels
+                </td>
+                <td class="p-3 text-slate-300">Thick-wall electron beam welding of vacuum vessels (ITER / Helion)</td>
+                <td class="p-3 text-slate-400">$95,000 / gantry / year</td>
+                <td class="p-3 text-slate-300">380 Fusion Fabrication Gantries</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$36.1M</td>
+              </tr>
+              <tr class="hover:bg-gray-900/40">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="microchip" class="w-3.5 h-3.5 text-violet-400"></i>
+                  Semiconductor Vacuum Chamber Additive
+                </td>
+                <td class="p-3 text-slate-300">High-purity refractory metal liners & molybdenum chucks</td>
+                <td class="p-3 text-slate-400">$40,000 / system / year</td>
+                <td class="p-3 text-slate-300">680 Advanced Tooling Stations</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$27.2M</td>
+              </tr>
+              <tr class="hover:bg-gray-900/40">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="compass" class="w-3.5 h-3.5 text-rose-400"></i>
+                  Subsea Energy & Titanium Piping
+                </td>
+                <td class="p-3 text-slate-300">Deep-sea riser joints & subsea hydrogen pipeline repair</td>
+                <td class="p-3 text-slate-400">$38,000 / crawler / year</td>
+                <td class="p-3 text-slate-300">575 Automated Pipeline Crawlers</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$21.8M</td>
+              </tr>
+              <tr class="bg-gray-950 font-bold border-t border-gray-700">
+                <td class="p-3 text-emerald-400" colspan="4">Total Mature Nationwide Commercial ARR (US Civil Market)</td>
+                <td class="p-3 text-right text-emerald-400 text-sm">$212.5M</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Industry Deep-Dive Cards (Physics & Executive Contrasts) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <!-- Deep Dive 1: Commercial Aerospace Titanium -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-cyan-400 font-mono text-xs mb-2">
+              <i data-lucide="plane" class="w-4 h-4"></i>
+              Commercial Aerospace Additive
+            </div>
+            <h4 class="text-sm font-bold text-white">Large Airframe Titanium Structures</h4>
+            <div class="mt-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
+              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1 text-cyan-400 font-bold">Physics in 1 Sentence:</span>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Wire-fed electron beam deposition can deposit 12 kg/hr of titanium alloy, but fluctuating contact resistance causes micro-arcing and keyhole collapses that trap spherical gas porosity in structural spars.
+              </p>
+            </div>
+
+            <div class="mt-3">
+              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1 text-rose-400 font-bold">Why Others Missed This:</span>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Incumbent shops rely on post-build hot isostatic pressing (HIP) and expensive computed tomography scans after parts are completed, scrapping $140,000 billets when internal defects exceed FAA limits.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-slate-400">
+            SaaS Value: Real-time defect-free certification saves $38,000 per wing spar forging.
+          </div>
+        </div>
+
+        <!-- Deep Dive 2: Commercial Orbital Space Stations -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-blue-400 font-mono text-xs mb-2">
+              <i data-lucide="satellite" class="w-4 h-4"></i>
+              Orbital Assembly & Reflector Trusses
+            </div>
+            <h4 class="text-sm font-bold text-white">Zero-G Robotic Truss Fabrication</h4>
+            <div class="mt-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
+              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1 text-cyan-400 font-bold">Physics in 1 Sentence:</span>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                In zero gravity, liquid molten titanium lacks buoyancy and gravity drainage, forming unstable hanging bridges where minor wire jitter breaks electrical contact and leaves open truss joints.
+              </p>
+            </div>
+
+            <div class="mt-3">
+              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1 text-rose-400 font-bold">Why Others Missed This:</span>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Optical and thermal cameras are blinded by the brilliant electron beam plasma flare ($>3,000\text{ K}$) and cannot observe the hidden solid-liquid electrical boundary beneath the melt puddle.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-slate-400">
+            SaaS Value: 100% autonomous zero-g quality gate without human astronaut inspection.
+          </div>
+        </div>
+
+        <!-- Deep Dive 3: Civil Nuclear Fusion Vessels -->
+        <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 text-amber-400 font-mono text-xs mb-2">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+              Clean Energy & Tokamak Chambers
+            </div>
+            <h4 class="text-sm font-bold text-white">Vacuum Vessel Deep Penetration Joints</h4>
+            <div class="mt-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
+              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1 text-cyan-400 font-bold">Physics in 1 Sentence:</span>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Welding 100 mm thick stainless steel and inconel reactor walls requires deep keyhole electron beam penetration where root closure instabilities cause catastrophic vacuum leaks under ultra-high vacuum.
+              </p>
+            </div>
+
+            <div class="mt-3">
+              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mb-1 text-rose-400 font-bold">Why Others Missed This:</span>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Legacy weld monitoring relies on trailing thermocouple probes that register temperature changes minutes too late to steer the electron beam before the root hole solidifies with defects.
+              </p>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-gray-800 text-[11px] font-mono text-slate-400">
+            SaaS Value: Eliminates multi-million dollar leak remediation cycles on fusion vessel sectors.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Executive Closing & Contact Box -->
+      <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-bold text-white">Partner with RFWaveCode on In-Space Additive Quality</h3>
+          <p class="text-xs text-slate-400 mt-1">
+            Inquiries regarding NASA SBIR Phase I documentation, licensing the $(v, R)$ State Auditor, or academic testbed partnerships:
+          </p>
+        </div>
+        <a href="mailto:support@rfwavecode.com" class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold transition-all shadow-lg shadow-cyan-600/30 flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="mail" class="w-4 h-4"></i>
+          support@rfwavecode.com
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="border-t border-gray-800 bg-[#080c14] py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-mono text-slate-500">
+      <div>© 2026 RFWaveCode LLC. All Rights Reserved. In-Space Additive Quality Systems.</div>
+      <div class="flex items-center gap-4">
+        <span>NASA SBIR Topic Z1.04 Phase I</span>
+        <span class="text-cyan-400">TRL 3 $\to$ TRL 5 Path</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: APPLICATION ENGINE, CHART.JS & CANVAS SIMULATION              -->
+  <!-- ========================================================================= -->
+  <script>
+    // --- TAB SWITCHING WITH EXPLICIT MAPPING DICTIONARY ---
+    const tabMapping = {
+      'sim': { viewId: 'viewSim', btnId: 'tabBtnSim' },
+      'physics': { viewId: 'viewPhysics', btnId: 'tabBtnPhysics' },
+      'proposal': { viewId: 'viewProposal', btnId: 'tabBtnProposal' },
+      'arr': { viewId: 'viewARR', btnId: 'tabBtnARR' }
+    };
+
+    function switchTab(targetKey) {
+      Object.keys(tabMapping).forEach(key => {
+        const item = tabMapping[key];
+        const view = document.getElementById(item.viewId);
+        const btn = document.getElementById(item.btnId);
+
+        if (key === targetKey) {
+          view.classList.remove('hidden');
+          btn.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-2 bg-cyan-600 text-white shadow-lg shadow-cyan-600/30";
+        } else {
+          view.classList.add('hidden');
+          btn.className = "px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-white transition-all flex items-center gap-2";
+        }
+      });
+
+      // Render MathJax equations immediately upon tab switch
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise().catch(err => console.debug(err));
+      }
+
+      // Re-trigger Canvas Resize if returning to Sim
+      if (targetKey === 'sim') {
+        setTimeout(resizeCanvas, 50);
+      }
+    }
+
+    // --- SIMULATION MODEL STATE VARIABLES ---
+    const state = {
+      velocity: 22.0,       // mm/s (v)
+      beamPower: 3.2,       // kW
+      wettingFactor: 1.0,   // relative Marangoni/surface tension
+      wireGap: 2.4,         // mm
+      autoObserver: true,
+
+      // Dynamic Calculated Values
+      contactResistance: 46.5, // mΩ (R)
+      nominalResistance: 45.2, // mΩ
+      thresholdResistance: 88.0, // mΩ
+      porosityRisk: 0.03,      // %
+      beamDeflectionOffset: 0.0, // mm
+      coilInterlockActive: false,
+      systemMode: 'NOMINAL', // 'NOMINAL', 'DETACHMENT_WARNING', 'INTERVENTION', 'VOID_COLLAPSE'
+
+      // History Trajectory for Phase Plane Scatter (v vs R)
+      trajectory: [],
+
+      // Time Series
+      timeTicks: 0,
+      historyR: [],
+      historyV: [],
+      historyLimit: []
+    };
+
+    // --- DOM CONTROLS REFERENCE ---
+    const inputVel = document.getElementById('inputVel');
+    const inputBeam = document.getElementById('inputBeam');
+    const inputWetting = document.getElementById('inputWetting');
+    const inputGap = document.getElementById('inputGap');
+    const autoObserverToggle = document.getElementById('autoObserverToggle');
+
+    const sliderVelVal = document.getElementById('sliderVelVal');
+    const sliderBeamVal = document.getElementById('sliderBeamVal');
+    const sliderWettingVal = document.getElementById('sliderWettingVal');
+    const sliderGapVal = document.getElementById('sliderGapVal');
+
+    const hudVelocityVal = document.getElementById('hudVelocityVal');
+    const hudDepRate = document.getElementById('hudDepRate');
+    const hudResVal = document.getElementById('hudResVal');
+    const hudResLimit = document.getElementById('hudResLimit');
+    const hudPorosityVal = document.getElementById('hudPorosityVal');
+    const hudBeamOffset = document.getElementById('hudBeamOffset');
+    const coilInterlockOverlay = document.getElementById('coilInterlockOverlay');
+    const systemStateBadge = document.getElementById('systemStateBadge');
+    const mitigationStatusText = document.getElementById('mitigationStatusText');
+    const stressProgressBar = document.getElementById('stressProgressBar');
+    const stressProgressLabel = document.getElementById('stressProgressLabel');
+    const statusIcon = document.getElementById('statusIcon');
+
+    // Attach Event Listeners
+    inputVel.addEventListener('input', (e) => {
+      state.velocity = parseFloat(e.target.value);
+      sliderVelVal.textContent = state.velocity.toFixed(1) + " mm/s";
+    });
+    inputBeam.addEventListener('input', (e) => {
+      state.beamPower = parseFloat(e.target.value);
+      sliderBeamVal.textContent = state.beamPower.toFixed(1) + " kW";
+    });
+    inputWetting.addEventListener('input', (e) => {
+      state.wettingFactor = parseFloat(e.target.value);
+      sliderWettingVal.textContent = state.wettingFactor.toFixed(2) + " × Marangoni";
+    });
+    inputGap.addEventListener('input', (e) => {
+      state.wireGap = parseFloat(e.target.value);
+      sliderGapVal.textContent = state.wireGap.toFixed(1) + " mm";
+    });
+    autoObserverToggle.addEventListener('change', (e) => {
+      state.autoObserver = e.target.checked;
+    });
+
+    function resetDefaults() {
+      inputVel.value = 22.0;
+      inputBeam.value = 3.2;
+      inputWetting.value = 1.0;
+      inputGap.value = 2.4;
+      autoObserverToggle.checked = true;
+
+      state.velocity = 22.0;
+      state.beamPower = 3.2;
+      state.wettingFactor = 1.0;
+      state.wireGap = 2.4;
+      state.autoObserver = true;
+      state.coilInterlockActive = false;
+      state.beamDeflectionOffset = 0.0;
+
+      sliderVelVal.textContent = "22.0 mm/s";
+      sliderBeamVal.textContent = "3.2 kW";
+      sliderWettingVal.textContent = "1.00 × Marangoni";
+      sliderGapVal.textContent = "2.4 mm";
+    }
+
+    function injectFault(type) {
+      if (type === 'wireHiccup') {
+        // Sudden wire feed slippage (v drops but wire recedes, R spikes)
+        state.wireGap = Math.min(5.5, state.wireGap + 1.8);
+        inputGap.value = state.wireGap.toFixed(1);
+        sliderGapVal.textContent = state.wireGap.toFixed(1) + " mm";
+      } else if (type === 'beamOvershoot') {
+        // Excessive beam power vaporizes keyhole
+        state.beamPower = Math.min(6.2, state.beamPower + 2.5);
+        inputBeam.value = state.beamPower.toFixed(1);
+        sliderBeamVal.textContent = state.beamPower.toFixed(1) + " kW";
+      } else if (type === 'gapSeparation') {
+        // Marangoni instability breaks liquid bridge
+        state.wettingFactor = 0.45;
+        inputWetting.value = 0.45;
+        sliderWettingVal.textContent = "0.45 × Marangoni";
+        state.wireGap = 4.8;
+        inputGap.value = 4.8;
+        sliderGapVal.textContent = "4.8 mm";
+      }
+    }
+
+    // --- PHYSICS EVALUATION ENGINE ---
+    function updatePhysicsStep() {
+      // 1. Nominal dynamic resistance as a function of velocity and beam thermal balance
+      // Deposition mass rate calculation: rho_Ti = 4.43 g/cm^3, wire diam = 1.2 mm
+      const wireAreaMm2 = Math.PI * Math.pow(1.2 / 2, 2); // ~1.13 mm2
+      const volumeFeedRate = wireAreaMm2 * state.velocity; // mm3/s
+      const massRateKgHr = (volumeFeedRate * 4.43e-6) * 3600; // kg/hr
+      hudDepRate.textContent = massRateKgHr.toFixed(2) + " kg/hr";
+
+      // Nominal baseline curve: R_base = c0 + c1 * sqrt(v) + gap_penalty
+      const r_base = 28.0 + (3.2 * Math.sqrt(state.velocity)) + (Math.pow(state.wireGap, 1.8) * 2.2);
+      state.nominalResistance = r_base;
+
+      // Hazard threshold boundary where bridge detachment occurs (depends on velocity):
+      // Lower v allows larger stable bridge before Rayleigh breakup; higher v compresses margin
+      state.thresholdResistance = Math.max(70.0, 115.0 - (state.velocity * 0.95));
+
+      // Thermal keyhole vapor recoil impedance penalty:
+      const thermalOverheat = Math.max(0, (state.beamPower - 3.8) * 14.0);
+      // Low wetting / high capillary pinching penalty:
+      const wettingPenalty = Math.max(0, (1.2 - state.wettingFactor) * 26.0);
+
+      // Raw Instantaneous dynamic contact resistance:
+      let rawR = r_base + thermalOverheat + wettingPenalty;
+      // Add microscopic noise typical of arc/wire contact
+      rawR += (Math.random() - 0.5) * 1.8;
+
+      // 2. Closed-Loop Observer & Fast Deflection Interlock
+      const detachmentDelta = rawR - state.thresholdResistance;
+
+      if (rawR >= state.thresholdResistance) {
+        if (state.autoObserver) {
+          // Autonomous Intervention: Steer electron beam deflection coils toward wire tip (10 µs response)
+          state.systemMode = 'INTERVENTION';
+          state.coilInterlockActive = true;
+          coilInterlockOverlay.classList.remove('hidden');
+
+          // Deflection offset compensates for liquid necking by melting advancing solid wire
+          state.beamDeflectionOffset = 0.42;
+          
+          // Micro-adjustment pulls gap down and restabilizes bridge
+          state.wireGap = Math.max(1.8, state.wireGap - 0.08);
+          inputGap.value = state.wireGap.toFixed(1);
+          sliderGapVal.textContent = state.wireGap.toFixed(1) + " mm";
+
+          // Relieve resistance via expanded molten meniscus contact
+          rawR = state.thresholdResistance - 6.5;
+          state.porosityRisk = Math.max(0.01, state.porosityRisk * 0.92);
+        } else {
+          // Without intervention, droplet snaps off -> Lack of fusion / bead humping
+          state.systemMode = 'VOID_COLLAPSE';
+          state.coilInterlockActive = false;
+          coilInterlockOverlay.classList.add('hidden');
+          state.beamDeflectionOffset = 0.0;
+          state.porosityRisk = Math.min(18.5, state.porosityRisk + 0.65);
+        }
+      } else if (rawR >= state.thresholdResistance - 14.0) {
+        state.systemMode = 'DETACHMENT_WARNING';
+        state.coilInterlockActive = false;
+        coilInterlockOverlay.classList.add('hidden');
+        state.beamDeflectionOffset = 0.12;
+        state.porosityRisk = 0.15;
+      } else {
+        state.systemMode = 'NOMINAL';
+        state.coilInterlockActive = false;
+        coilInterlockOverlay.classList.add('hidden');
+        state.beamDeflectionOffset = 0.0;
+        state.porosityRisk = Math.max(0.01, state.porosityRisk - 0.02);
+      }
+
+      state.contactResistance = Math.max(15.0, rawR);
+
+      // Update UI Telemetry Values
+      hudVelocityVal.textContent = state.velocity.toFixed(1);
+      hudResVal.textContent = state.contactResistance.toFixed(1);
+      hudResLimit.textContent = state.thresholdResistance.toFixed(1) + " mΩ";
+      hudPorosityVal.textContent = state.porosityRisk.toFixed(2);
+      hudBeamOffset.textContent = state.beamDeflectionOffset > 0 ? "+" + state.beamDeflectionOffset.toFixed(2) + " mm" : "0.00 mm";
+
+      // Status badges
+      if (state.systemMode === 'NOMINAL') {
+        systemStateBadge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        systemStateBadge.textContent = "STABLE MENISCUS BRIDGE";
+        mitigationStatusText.className = "text-emerald-400 font-bold";
+        mitigationStatusText.textContent = "CONTINUOUS CONDUCTION";
+        statusIcon.className = "w-4 h-4 text-emerald-400";
+        stressProgressBar.className = "bg-cyan-500 h-1.5 rounded-full transition-all duration-300";
+      } else if (state.systemMode === 'DETACHMENT_WARNING') {
+        systemStateBadge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        systemStateBadge.textContent = "WARNING: MENISCUS NECKING";
+        mitigationStatusText.className = "text-amber-400 font-bold";
+        mitigationStatusText.textContent = "DELTA R / DELTA T SPIKE";
+        statusIcon.className = "w-4 h-4 text-amber-400";
+        stressProgressBar.className = "bg-amber-500 h-1.5 rounded-full transition-all duration-300";
+      } else if (state.systemMode === 'INTERVENTION') {
+        systemStateBadge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 animate-pulse";
+        systemStateBadge.textContent = "FAST COIL STEERING ENGAGED";
+        mitigationStatusText.className = "text-cyan-400 font-bold animate-pulse";
+        mitigationStatusText.textContent = "BEAM DEFLECTION ACTIVE";
+        statusIcon.className = "w-4 h-4 text-cyan-400";
+        stressProgressBar.className = "bg-cyan-400 h-1.5 rounded-full transition-all duration-300";
+      } else {
+        systemStateBadge.className = "px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-bounce";
+        systemStateBadge.textContent = "DROPLET DETACHMENT / VOID";
+        mitigationStatusText.className = "text-rose-400 font-bold";
+        mitigationStatusText.textContent = "ARC SEVERED - POROSITY";
+        statusIcon.className = "w-4 h-4 text-rose-400";
+        stressProgressBar.className = "bg-rose-500 h-1.5 rounded-full transition-all duration-300";
+      }
+
+      const stressPct = Math.min(100, Math.max(5, (state.contactResistance / state.thresholdResistance) * 85));
+      stressProgressBar.style.width = stressPct.toFixed(0) + "%";
+      stressProgressLabel.textContent = stressPct.toFixed(0) + "%";
+
+      // Append point to trajectory (X: Velocity v, Y: Resistance R)
+      state.trajectory.push({ x: state.velocity, y: state.contactResistance });
+      if (state.trajectory.length > 28) state.trajectory.shift();
+
+      // Time series update
+      state.timeTicks++;
+      state.historyR.push(state.contactResistance);
+      state.historyV.push(state.velocity);
+      state.historyLimit.push(state.thresholdResistance);
+      if (state.historyR.length > 40) {
+        state.historyR.shift();
+        state.historyV.shift();
+        state.historyLimit.shift();
+      }
+    }
+
+    // --- CHART.JS CONFIGURATIONS ---
+    let phaseChart = null;
+    let timeSeriesChart = null;
+
+    function initCharts() {
+      // 1. Phase Plane Chart (Velocity v on X-axis, Resistance R on Y-axis)
+      const ctxPhase = document.getElementById('phaseChart').getContext('2d');
+
+      // Generate theoretical baseline corridor and detachment boundary curve
+      const baselineCorridor = [];
+      const detachmentHazardBoundary = [];
+      for (let v = 4; v <= 46; v += 2) {
+        // R_nom = 28 + 3.2 * sqrt(v) + constant nominal
+        const r_nom = 32.0 + (3.2 * Math.sqrt(v)) + 9.0;
+        baselineCorridor.push({ x: v, y: r_nom });
+
+        // Boundary: R limit declines with velocity due to dynamic capillary necking
+        const r_lim = Math.max(68, 115 - (v * 0.95));
+        detachmentHazardBoundary.push({ x: v, y: r_lim });
+      }
+
+      phaseChart = new Chart(ctxPhase, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Theoretical Conduction Baseline',
+              data: baselineCorridor,
+              showLine: true,
+              borderColor: 'rgba(6, 182, 212, 0.4)',
+              borderWidth: 1.5,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              fill: false
+            },
+            {
+              label: 'Zero-G Detachment Hazard Zone',
+              data: [
+                { x: 5, y: 110 },
+                { x: 15, y: 100 },
+                { x: 25, y: 91 },
+                { x: 35, y: 81 },
+                { x: 45, y: 72 }
+              ],
+              showLine: true,
+              borderColor: 'rgba(239, 68, 68, 0.7)',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: 0,
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              fill: 'end'
+            },
+            {
+              label: 'Historical Trajectory',
+              data: [],
+              showLine: true,
+              borderColor: 'rgba(139, 92, 246, 0.5)',
+              borderWidth: 1.5,
+              pointRadius: 2,
+              pointBackgroundColor: 'rgba(139, 92, 246, 0.8)'
+            },
+            {
+              label: 'Live Dynamic Point (v, R)',
+              data: [{ x: 22.0, y: 46.5 }],
+              pointRadius: 7,
+              pointHoverRadius: 9,
+              pointBackgroundColor: '#06b6d4',
+              borderColor: '#ffffff',
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Wire Feed Velocity v (mm/s)',
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 10 }
+              },
+              min: 0,
+              max: 50,
+              grid: { color: 'rgba(51, 65, 85, 0.25)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Dynamic Pool Resistance R (mΩ)',
+                color: '#94a3b8',
+                font: { family: 'JetBrains Mono', size: 10 }
+              },
+              min: 10,
+              max: 130,
+              grid: { color: 'rgba(51, 65, 85, 0.25)' },
+              ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 9 } }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 10,
+                color: '#cbd5e1',
+                font: { family: 'Inter', size: 10 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` v: ${ctx.parsed.x.toFixed(1)} mm/s | R: ${ctx.parsed.y.toFixed(1)} mΩ`
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Secondary Time Series Chart (HUD Right Panel)
+      const ctxTime = document.getElementById('timeSeriesChart').getContext('2d');
+      timeSeriesChart = new Chart(ctxTime, {
+        type: 'line',
+        data: {
+          labels: Array.from({ length: 40 }, (_, i) => -40 + i),
+          datasets: [
+            {
+              label: 'R (mΩ)',
+              data: [],
+              borderColor: '#f59e0b',
+              borderWidth: 2,
+              pointRadius: 0,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Limit (mΩ)',
+              data: [],
+              borderColor: '#ef4444',
+              borderWidth: 1.5,
+              borderDash: [3, 3],
+              pointRadius: 0,
+              yAxisID: 'y'
+            },
+            {
+              label: 'v (mm/s)',
+              data: [],
+              borderColor: '#06b6d4',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              display: false
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              min: 0,
+              max: 130,
+              ticks: { color: '#f59e0b', font: { size: 8, family: 'JetBrains Mono' } },
+              grid: { color: 'rgba(51, 65, 85, 0.15)' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              min: 0,
+              max: 55,
+              ticks: { color: '#06b6d4', font: { size: 8, family: 'JetBrains Mono' } },
+              grid: { drawOnChartArea: false }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { boxWidth: 8, color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } }
+            }
+          }
+        }
+      });
+    }
+
+    // --- HTML5 CANVAS 2D HARDWARE SCHEMATIC ---
+    const canvas = document.getElementById('ebCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Electron beam particles & molten spatter spark particles
+    const beamParticles = Array.from({ length: 35 }, () => ({
+      x: 0,
+      y: 0,
+      speed: 10 + Math.random() * 12,
+      spread: (Math.random() - 0.5) * 6
+    }));
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 640;
+      const h = rect.height || 320;
+      canvas.width = w * window.devicePixelRatio;
+      canvas.height = h * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawEBWire() {
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width || 640;
+      const height = rect.height || 320;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Deep Space vacuum background grid
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.25)';
+      ctx.lineWidth = 1;
+      const gridSize = 25;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // Schematic coordinates
+      const gunX = width * 0.48;
+      const gunY = 25;
+      const poolX = width * 0.48 + (state.beamDeflectionOffset * 40);
+      const poolY = height * 0.72;
+      const wireGuideX = width * 0.18;
+      const wireGuideY = height * 0.46;
+
+      // 1. Draw Substrate Truss Strut (Titanium hollow tube profile)
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(width * 0.08, poolY + 12, width * 0.84, 28, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Truss lattice diagonal cross-members
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      for (let tx = width * 0.12; tx < width * 0.82; tx += 45) {
+        ctx.beginPath();
+        ctx.moveTo(tx, poolY + 12);
+        ctx.lineTo(tx + 25, poolY + 40);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px JetBrains Mono';
+      ctx.fillText('TITANIUM TRUSS STRUT (GRADE 5 Ti-6Al-4V)', width * 0.12, poolY + 56);
+
+      // 2. Draw Solidified Previous Bead Layer
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(width * 0.22, poolY, poolX - width * 0.22, 14, [4, 0, 0, 4]);
+      ctx.fill();
+      ctx.stroke();
+
+      // 3. Draw Electron Gun Column & Deflection Coils
+      ctx.save();
+      ctx.translate(gunX, gunY);
+      // Gun barrel
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-24, 0, 48, 55, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Deflection Coils (Left and Right)
+      ctx.fillStyle = state.coilInterlockActive ? '#0284c7' : '#1e3a8a';
+      ctx.strokeStyle = state.coilInterlockActive ? '#38bdf8' : '#60a5fa';
+      ctx.lineWidth = 1.5;
+      // Left coil
+      ctx.beginPath();
+      ctx.roundRect(-36, 20, 10, 24, 3);
+      ctx.fill();
+      ctx.stroke();
+      // Right coil
+      ctx.beginPath();
+      ctx.roundRect(26, 20, 10, 24, 3);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '9px JetBrains Mono';
+      ctx.fillText('60kV EB GUN', -26, -5);
+      if (state.coilInterlockActive) {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('COIL B-STEER', -32, 70);
+      }
+      ctx.restore();
+
+      // 4. Draw Electron Beam Cone to Melt Pool
+      const beamGrad = ctx.createLinearGradient(gunX, gunY + 55, poolX, poolY);
+      beamGrad.addColorStop(0, 'rgba(56, 189, 248, 0.9)');
+      beamGrad.addColorStop(0.6, 'rgba(14, 165, 233, 0.6)');
+      beamGrad.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+
+      ctx.beginPath();
+      ctx.moveTo(gunX - 5, gunY + 55);
+      ctx.lineTo(poolX + (state.systemMode === 'VOID_COLLAPSE' ? 8 : 4), poolY);
+      ctx.lineTo(poolX - (state.systemMode === 'VOID_COLLAPSE' ? 8 : 4), poolY);
+      ctx.lineTo(gunX + 5, gunY + 55);
+      ctx.closePath();
+      ctx.fillStyle = beamGrad;
+      ctx.fill();
+
+      // Beam particles down the column
+      beamParticles.forEach(bp => {
+        bp.y += bp.speed;
+        if (bp.y > (poolY - (gunY + 55))) {
+          bp.y = 0;
+          bp.spread = (Math.random() - 0.5) * 8;
+        }
+        const py = gunY + 55 + bp.y;
+        const interp = bp.y / (poolY - (gunY + 55));
+        const px = (gunX * (1 - interp)) + (poolX * interp) + bp.spread;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 5. Draw Wire Feeder Nozzle & Advancing Titanium Consumable Wire
+      ctx.save();
+      // Wire Guide Nozzle body
+      ctx.translate(wireGuideX, wireGuideY);
+      ctx.rotate(0.48); // Angle toward pool
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-12, -10, 48, 20, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Wire protruding out of nozzle
+      const wireExtLength = 75;
+      ctx.strokeStyle = '#f59e0b'; // Titanium metallic wire color
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(36, 0);
+      ctx.lineTo(36 + wireExtLength, 0);
+      ctx.stroke();
+
+      // Current sense pickup badge on wire
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(48, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '10px JetBrains Mono';
+      ctx.fillText('WIRE FEED Ø1.2mm', wireGuideX - 25, wireGuideY - 18);
+      ctx.fillText(`v = ${state.velocity.toFixed(1)} mm/s`, wireGuideX - 18, wireGuideY - 6);
+
+      // 6. Draw Zero-G Molten Pool & Capillary Liquid Bridge
+      const wireTipX = poolX - (state.wireGap * 7);
+      const wireTipY = poolY - 4;
+
+      if (state.systemMode === 'VOID_COLLAPSE') {
+        // Severed bridge / droplet detachment mode
+        // Detached droplet in microgravity
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc((wireTipX + poolX) / 2, poolY - 8, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Molten pool collapsed
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.ellipse(poolX, poolY + 4, 14, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 11px JetBrains Mono';
+        ctx.fillText('⚠ BRIDGE DETACHED (SPHEROIDIZATION)', poolX - 95, poolY - 26);
+      } else {
+        // Continuous capillary liquid bridge between wire tip and melt puddle
+        ctx.beginPath();
+        ctx.moveTo(wireTipX, wireTipY);
+        // Liquid meniscus curve
+        const neckRadius = Math.max(2, 6 - (state.contactResistance / 20));
+        ctx.quadraticCurveTo((wireTipX + poolX) / 2, poolY - neckRadius, poolX + 12, poolY + 2);
+        ctx.lineTo(poolX - 12, poolY + 6);
+        ctx.closePath();
+
+        const liquidGrad = ctx.createLinearGradient(wireTipX, wireTipY, poolX, poolY);
+        liquidGrad.addColorStop(0, '#f59e0b');
+        liquidGrad.addColorStop(0.5, state.coilInterlockActive ? '#38bdf8' : '#fbbf24');
+        liquidGrad.addColorStop(1, '#ffffff');
+        ctx.fillStyle = liquidGrad;
+        ctx.fill();
+
+        // Base molten pool on substrate
+        ctx.beginPath();
+        ctx.ellipse(poolX, poolY + 3, 16, 7, 0, 0, Math.PI * 2);
+        ctx.fillStyle = state.coilInterlockActive ? '#06b6d4' : '#f59e0b';
+        ctx.fill();
+
+        // Glow ring around liquid bridge
+        ctx.strokeStyle = state.coilInterlockActive ? 'rgba(56, 189, 248, 0.8)' : 'rgba(251, 191, 36, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(poolX, poolY + 3, 20, 9, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '10px JetBrains Mono';
+        ctx.fillText(`BRIDGE R: ${state.contactResistance.toFixed(1)} mΩ`, poolX - 45, poolY + 28);
+      }
+    }
+
+    // --- MAIN ANIMATION & REFRESH LOOP ---
+    let frameCount = 0;
+
+    function step() {
+      // 1. Update physics calculations
+      updatePhysicsStep();
+
+      // 2. Draw 2D Canvas Schematic
+      drawEBWire();
+
+      // 3. Throttled Chart Updates (every 3 frames)
+      frameCount++;
+      if (frameCount % 3 === 0) {
+        if (phaseChart) {
+          // Update live trajectory and current head
+          phaseChart.data.datasets[2].data = state.trajectory;
+          phaseChart.data.datasets[3].data = [{ x: state.velocity, y: state.contactResistance }];
+          phaseChart.update('none');
+        }
+
+        if (timeSeriesChart) {
+          timeSeriesChart.data.datasets[0].data = state.historyR;
+          timeSeriesChart.data.datasets[1].data = state.historyLimit;
+          timeSeriesChart.data.datasets[2].data = state.historyV;
+          timeSeriesChart.update('none');
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    // Window Onload Initialization
+    window.onload = function () {
+      initCharts();
+      resizeCanvas();
+      // Render Lucide icons
+      lucide.createIcons();
+      // Start Simulation Loop
+      requestAnimationFrame(step);
+    };
+  </script>
+</body>
+</html>
