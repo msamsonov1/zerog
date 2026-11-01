@@ -289,5 +289,5 @@ void WireArc_ProcessImpedance(void)
 For technical documentation, bench validation datasets, or STTR academic research partnership inquiries:
 
 * **Company:** RFWaveCode
-* **DUNS / UEI:** `Y4K8NJM49L93` | **CAGE Code:** `8V2L1`
+
 * **Email:** [support@rfwavecode.com](mailto:support@rfwavecode.com)
